@@ -1,0 +1,157 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Tenants — Starlink Tracker</title>
+<style>
+body{font-family:-apple-system,system-ui,sans-serif;margin:0;background:#0f1419;color:#e6e6e6}
+input,button,select{font-size:16px;padding:8px;border-radius:8px;border:1px solid #444;background:#1b222b;color:#fff}
+#app{display:none;max-width:1100px;margin:auto;padding:12px}h1{font-size:22px;margin:8px 0}
+.muted{color:#999;font-size:13px}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:8px;margin:10px 0}
+.card{background:#1b222b;border-radius:10px;padding:10px}.card .l{font-size:12px;color:#aaa}.card .v{font-size:18px;font-weight:600}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}th,td{padding:7px 8px;border-bottom:1px solid #2a323c;text-align:left;vertical-align:middle}
+td.n,th.n{text-align:right}th{background:#1b222b;position:sticky;top:0;white-space:nowrap}
+tfoot td{font-weight:700;background:#151b22}
+th:first-child,td:first-child{position:sticky;left:0;background:#0f1419;z-index:1}th:first-child{background:#1b222b;z-index:3}tfoot td:first-child{background:#151b22}
+.inv{font-size:11px;color:#8aa;margin-top:2px}.src{border-bottom:1px dotted #7aa7ff;cursor:help}.gap{color:#f6b04e}
+td select,td input{width:100%;box-sizing:border-box;padding:6px}td input{text-align:right}
+th{position:sticky}.rz{position:absolute;right:0;top:0;bottom:0;width:12px;cursor:col-resize;touch-action:none;z-index:4}.rz:after{content:"";position:absolute;right:4px;top:25%;bottom:25%;width:2px;background:#3a4152}.rz:hover:after,.rz.on:after{background:#22c55e}
+table.fx{table-layout:fixed;width:auto}#t th,#t td{box-sizing:border-box}table.fx td,table.fx th{overflow:hidden;text-overflow:ellipsis}
+#tip{position:fixed;left:10px;right:10px;bottom:14px;background:#24303d;border:1px solid #3d5068;border-radius:10px;padding:10px 12px;font-size:14px;display:none;z-index:9;max-width:600px;margin:auto}
+.neg{color:#f66}
+td input.l{text-align:left}td{padding:4px 5px}td input,td select{border-color:#2f3946;background:#151b22}
+.back{color:#7aa7ff;text-decoration:none;font-size:15px}.del{background:none;border:none;color:#f66;font-size:18px;padding:4px 8px;cursor:pointer}
+#q{flex:1;min-width:140px}label.btn{font-size:16px;padding:8px;border-radius:8px;border:1px solid #444;background:#1b222b;cursor:pointer}
+button.pri{background:#2563eb;border-color:#2563eb}.empty{padding:20px;text-align:left;color:#999}
+</style></head><body>
+<div id="app">
+<a class="back" href="index.html">← All parks</a>
+<h1 id="h">Tenants</h1><div class="muted" id="sub"></div>
+<div class="cards" id="cards"></div>
+<div class="bar"><button class="pri" onclick="add()">+ Add tenant</button><label class="btn">Import CSV<input type="file" id="imp" accept=".csv,text/csv" hidden onchange="imp(this)"></label><button onclick="exp()">Export CSV</button><input id="q" type="search" placeholder="Search name, lot, phone, email" oninput="filt()"></div>
+<div class="tw"><table id="t"><thead><tr><th>Tenant Name</th><th>Lot #</th><th>Phone</th><th>Email</th><th>Paying Customer</th><th class="n">Monthly Charge</th><th class="nosort"></th></tr></thead><tbody id="tb"></tbody><tfoot><tr id="tf"></tr></tfoot></table></div>
+<div class="muted" style="margin:14px 0">Changes save automatically on this device and roll up to the main page's paying customers and monthly charge. Tenant details are never uploaded to the website. To move them to another device, use Export CSV here and Import CSV there. Import matches rows by Lot # and name: matching rows are updated and new rows are added.</div>
+</div>
+<div id="tip" onclick="this.style.display='none'"></div>
+<script>
+const TK='starlink_tenants_v1';
+function loadT(){try{return JSON.parse(localStorage[TK]||'{}')}catch(x){return {}}}
+function saveT(T){localStorage[TK]=JSON.stringify(T)}
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const $=v=>'$'+(+v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+function stats(L){L=L||[];let pay=0,rev=0;L.forEach(t=>{if(t.pay=='Yes'){pay++;rev+=+t.chg||0}});return {n:L.length,pay,rev}}
+const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+function dl(name,L){const b=new Blob([L.map(r=>r.map(q).join(',')).join('\n')],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();a.remove();}
+function parseCSV(s){s=s.replace(/^\uFEFF/,'');const R=[];let r=[],f='',i=0,Q=false;for(;i<s.length;i++){const c=s[i];if(Q){if(c=='"'){if(s[i+1]=='"'){f+='"';i++}else Q=false}else f+=c}else if(c=='"')Q=true;else if(c==','){r.push(f);f=''}else if(c=='\n'||c=='\r'){if(c=='\r'&&s[i+1]=='\n')i++;r.push(f);R.push(r);r=[];f=''}else f+=c}if(f!==''||r.length){r.push(f);R.push(r)}return R.filter(x=>x.some(v=>v.trim()!==''))}
+const TCOLS=['Tenant Name','Lot #','Phone','Email','Paying Customer','Monthly Charge'];
+const tRow=t=>[t.name,t.lot,t.phone,t.email,t.pay,t.chg??''];
+function rz(t,w0){const ths=[...t.querySelectorAll('thead th')],W=w0?w0.slice():ths.map(th=>th.getBoundingClientRect().width),tw=()=>t.style.width=W.reduce((a,b)=>a+b,0)+'px';
+ths.forEach((th,i)=>th.style.width=W[i]+'px');tw();t.classList.add('fx');
+ths.forEach((th,i)=>{const h=document.createElement('span');h.className='rz';h.title='Drag to resize';th.appendChild(h);
+h.addEventListener('click',e=>{e.stopPropagation();e.preventDefault()},true);
+h.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();h.setPointerCapture(e.pointerId);h.classList.add('on');const x0=e.clientX,w0=W[i];
+const mv=ev=>{W[i]=Math.max(40,w0+ev.clientX-x0);th.style.width=W[i]+'px';tw()};
+h.addEventListener('pointermove',mv);h.addEventListener('pointerup',()=>{h.classList.remove('on');h.removeEventListener('pointermove',mv)},{once:true})})})}
+function setW(t,w){rz(t,w)}
+
+let D,P,T=loadT(),id=new URLSearchParams(location.search).get('id');
+const L=()=>T[id]||(T[id]=[]);
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+function toast(m){const t=document.getElementById('tip');t.textContent=m;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',5000)}
+function row(t){return `<tr data-k="${t.k}"><td data-v="${esc(t.name)}"><input class="l" data-f="name" value="${esc(t.name)}" placeholder="Name"></td>`+
+`<td data-v="${esc(t.lot)}"><input class="l" data-f="lot" value="${esc(t.lot)}"></td>`+
+`<td data-v="${esc(t.phone)}"><input class="l" type="tel" data-f="phone" value="${esc(t.phone)}"></td>`+
+`<td data-v="${esc(t.email)}"><input class="l" type="email" data-f="email" value="${esc(t.email)}"></td>`+
+`<td data-v="${esc(t.pay)}"><select data-f="pay"><option value=""></option><option${t.pay=='Yes'?' selected':''}>Yes</option><option${t.pay=='No'?' selected':''}>No</option></select></td>`+
+`<td class="n" data-v="${t.chg??''}"><input type="number" inputmode="decimal" step="0.01" min="0" data-f="chg" value="${t.chg??''}"></td>`+
+`<td><button class="del" title="Delete tenant" onclick="del('${t.k}')">✕</button></td></tr>`}
+function render(){const A=L();document.getElementById('tb').innerHTML=A.length?A.map(row).join(''):'';if(!A.length)document.getElementById('tb').innerHTML='<tr><td colspan="7" class="empty">No tenants yet. Tap “+ Add tenant” or “Import CSV”.</td></tr>';tot();filt()}
+function tot(){const s=stats(L());
+document.getElementById('tf').innerHTML=`<td>TOTAL</td><td>${s.n} listed</td><td></td><td></td><td>${s.pay} paying</td><td class="n">${$(s.rev)}/mo</td><td></td>`;
+document.getElementById('cards').innerHTML=[['Pads (OM)',P.pads??'—'],['Tenants (OM)',P.ten??'—'],['Tenants listed',s.n],['Paying customers',s.pay],['Monthly revenue',$(s.rev)]].map(c=>`<div class="card"><div class="l">${c[0]}</div><div class="v">${c[1]}</div></div>`).join('')}
+function save(){saveT(T);tot()}
+document.addEventListener('input',e=>{const f=e.target.dataset.f;if(!f)return;const tr=e.target.closest('tr'),t=L().find(x=>x.k==tr.dataset.k);if(!t)return;let v=e.target.value;
+if(f=='chg')v=v===''?'':+v;t[f]=v;e.target.closest('td').dataset.v=v;save()});
+function add(){const t={k:uid(),name:'',lot:'',phone:'',email:'',pay:'',chg:''};L().unshift(t);save();document.getElementById('q').value='';render();document.querySelector(`tr[data-k="${t.k}"] input`).focus()}
+function del(k){const t=L().find(x=>x.k==k);if(!t||!confirm('Delete '+(t.name||'this tenant')+'?'))return;T[id]=L().filter(x=>x.k!=k);save();render()}
+function filt(){const q=document.getElementById('q').value.trim().toLowerCase();document.querySelectorAll('#tb tr[data-k]').forEach(tr=>{const t=L().find(x=>x.k==tr.dataset.k);tr.style.display=!q||[t.name,t.lot,t.phone,t.email].join(' ').toLowerCase().includes(q)?'':'none'})}
+function exp(){dl((P.park+' tenants').replace(/[^\w]+/g,'-')+'.csv',[TCOLS,...L().map(tRow)])}
+const HM={name:['tenant name','name','tenant','resident','resident name'],lot:['lot #','lot','lot#','unit','unit #','space','site','#'],phone:['phone','phone number','mobile','cell'],email:['email','email address','e-mail'],pay:['paying customer','paying','paying?'],chg:['monthly charge','charge','monthly charge $','amount']};
+function imp(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const R=parseCSV(r.result);if(R.length<2)throw Error('file has no rows');
+const H=R[0].map(h=>h.trim().toLowerCase()),ix={};for(const k in HM)ix[k]=H.findIndex(h=>HM[k].includes(h));if(ix.name<0)throw Error('no "Tenant Name" column found');
+let a=0,u=0;const A=L(),key=t=>(String(t.lot).trim()+'|'+String(t.name).trim()).toLowerCase();
+R.slice(1).forEach(c=>{const g=k=>ix[k]<0?'':(c[ix[k]]??'').trim();const n={name:g('name'),lot:g('lot'),phone:g('phone'),email:g('email'),pay:'',chg:''};
+let p=g('pay').toLowerCase();n.pay=/^(y|yes|true|1)$/.test(p)?'Yes':/^(n|no|false|0)$/.test(p)?'No':'';const ch=g('chg').replace(/[$,\s]/g,'');n.chg=ch===''||isNaN(+ch)?'':+ch;
+if(!n.name&&!n.lot)return;const ex=A.find(t=>key(t)==key(n));if(ex){for(const k of ['phone','email','pay','chg'])if(n[k]!=='')ex[k]=n[k];u++}else{n.k=uid();A.push(n);a++}});
+save();render();toast(`Imported: ${a} added, ${u} updated.`)}catch(x){toast('Import failed: '+x.message)}inp.value=''};r.readAsText(f)}
+async function go(){try{D=await (await fetch('data.json',{cache:'no-store'})).json()}catch(x){document.getElementById('app').style.display='block';document.getElementById('sub').textContent='Could not load data: '+x.message;return}
+P=D.rows.find(r=>r.id==id);document.getElementById('app').style.display='block';
+if(!P){document.getElementById('h').textContent='Park not found';document.querySelector('.bar').style.display='none';document.querySelector('.tw').style.display='none';return}
+document.title=P.park+' — Tenants';document.getElementById('h').textContent=P.park;document.getElementById('sub').textContent=(P.addr||'Address not found')+' · '+P.inv;
+render();setW(document.getElementById('t'),innerWidth<700?[150,62,130,190,86,100,44]:[230,70,150,250,120,130,48])}
+go();
+</script><!--SORTABLE-START--><script>
+/* Shared sortable tables (Grok Bot trackers). Click any header: asc/desc toggle with ▲/▼.
+   Works on dynamically rendered tables via event delegation. Totals (tfoot, .total/.ft/.tot rows,
+   or first cell TOTAL/ALL-TIME/GRAND) stay pinned at bottom. Group-label rows (fewer cells / colspan)
+   keep their members: sorting happens within each group. Uses td[data-v] when present.
+   Skip: th with own onclick, th.nosort, or table[data-nosort]. */
+(function(){
+  if(window.__sortableShared)return;window.__sortableShared=1;
+  var st=document.createElement('style');
+  st.textContent='table:not([data-nosort]) th:not(.nosort){cursor:pointer;user-select:none}th .srt-ar{font-size:.8em;opacity:.85;margin-left:3px}';
+  (document.head||document.documentElement).appendChild(st);
+  var MON={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+  function key(cell){
+    if(!cell)return null;
+    var raw=cell.dataset&&cell.dataset.v!=null?cell.dataset.v:cell.textContent;
+    var s=String(raw).replace(/[▲▼]/g,'').trim();
+    if(!s||s==='—'||s==='-'||s==='–'||/^n\/?a$/i.test(s))return null;
+    var m;
+    if((m=s.match(/^(\d{4})-(\d{2})(?:-(\d{2}))?/)))return {n:Date.UTC(+m[1],+m[2]-1,+(m[3]||1))};
+    if((m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/))){var y=+m[3];if(y<100)y+=2000;return {n:Date.UTC(y,+m[1]-1,+m[2])};}
+    if((m=s.match(/^([A-Za-z]{3})[a-z]*\.? (\d{1,2}),? (\d{4})$/))&&MON[m[1].toLowerCase()])return {n:Date.UTC(+m[3],MON[m[1].toLowerCase()]-1,+m[2])};
+    if((m=s.match(/^([A-Za-z]{3})[a-z]* (\d{4})$/))&&MON[m[1].toLowerCase()])return {n:Date.UTC(+m[2],MON[m[1].toLowerCase()]-1,1)};
+    if((m=s.match(/^Q([1-4]) (\d{4})$/i)))return {n:Date.UTC(+m[2],(+m[1]-1)*3,1)};
+    var t=s.replace(/[$,%x×\s]|USD/gi,'').replace(/^\+/,'').replace(/[−–]/g,'-');
+    var neg=/^\(.*\)$/.test(t);if(neg)t=t.slice(1,-1);
+    var mult=1;if((m=t.match(/^(-?[\d.]+)([KMB])$/i))){t=m[1];mult={k:1e3,m:1e6,b:1e9}[m[2].toLowerCase()];}
+    if(/^-?\d*\.?\d+$/.test(t))return {n:parseFloat(t)*mult*(neg?-1:1)};
+    return {s:s.toLowerCase()};
+  }
+  function pinned(r){
+    if(r.parentElement&&r.parentElement.tagName==='TFOOT')return true;
+    if(/(^|\s)(total|totals|ft|tot|sum|grand|pinned)(\s|$)/i.test(r.className))return true;
+    var c=r.cells[0];return !!c&&/^\s*(TOTAL|TOTALS|ALL-TIME|GRAND TOTAL)\b/i.test(c.textContent);
+  }
+  document.addEventListener('click',function(e){
+    var th=e.target.closest&&e.target.closest('th');if(!th||th.onclick||th.classList.contains('nosort'))return;
+    var tb=th.closest('table');if(!tb||tb.hasAttribute('data-nosort'))return;
+    var hr=th.parentElement;if(hr.parentElement.tagName==='TFOOT')return;
+    var ci=0;for(var k=0;k<hr.cells.length&&hr.cells[k]!==th;k++)ci+=hr.cells[k].colSpan||1;
+    var ncol=0;for(k=0;k<hr.cells.length;k++)ncol+=hr.cells[k].colSpan||1;
+    var dir=th.dataset.sdir==='asc'?'desc':'asc',m=dir==='asc'?1:-1;
+    tb.querySelectorAll('th').forEach(function(x){delete x.dataset.sdir;var a=x.querySelector('.srt-ar');if(a)a.remove();});
+    th.dataset.sdir=dir;var ar=document.createElement('span');ar.className='srt-ar';ar.textContent=dir==='asc'?'▲':'▼';th.appendChild(ar);
+    var bodies=tb.tBodies.length?[].slice.call(tb.tBodies):[tb];
+    bodies.forEach(function(body){
+      var all=[].slice.call(body.rows).filter(function(r){return r!==hr&&!(r.cells.length&&r.cells[0].tagName==='TH'&&!r.querySelector('td'));});
+      var pins=[],groups=[{head:null,rows:[]}];
+      all.forEach(function(r){
+        if(pinned(r)){pins.push(r);return;}
+        var w=0;for(var j=0;j<r.cells.length;j++)w+=r.cells[j].colSpan||1;
+        if(r.cells.length===1&&ncol>1)groups.push({head:r,rows:[]});else groups[groups.length-1].rows.push(r);
+      });
+      function cellAt(r){var x=0;for(var j=0;j<r.cells.length;j++){if(x===ci)return r.cells[j];x+=r.cells[j].colSpan||1;}return null;}
+      groups.forEach(function(g){
+        g.rows.sort(function(a,b){var A=key(cellAt(a)),B=key(cellAt(b));
+          if(!A&&!B)return 0;if(!A)return 1;if(!B)return -1;
+          if(A.n!=null&&B.n!=null)return (A.n-B.n)*m;
+          return String(A.s!=null?A.s:A.n).localeCompare(String(B.s!=null?B.s:B.n),undefined,{numeric:true})*m;});
+        if(g.head)body.appendChild(g.head);g.rows.forEach(function(r){body.appendChild(r);});
+      });
+      pins.forEach(function(r){body.appendChild(r);});
+    });
+  },false);
+})();
+
+</script><!--SORTABLE-END-->
+</body></html>

@@ -16,51 +16,61 @@ th:first-child,td:first-child{position:sticky;left:0;background:#0f1419;z-index:
 .inv{font-size:11px;color:#8aa;margin-top:2px}.src{border-bottom:1px dotted #7aa7ff;cursor:help}.gap{color:#f6b04e}
 td select,td input{width:100%;box-sizing:border-box;padding:6px}td input{text-align:right}
 th{position:sticky}.rz{position:absolute;right:0;top:0;bottom:0;width:12px;cursor:col-resize;touch-action:none;z-index:4}.rz:after{content:"";position:absolute;right:4px;top:25%;bottom:25%;width:2px;background:#3a4152}.rz:hover:after,.rz.on:after{background:#22c55e}
-table.fx{table-layout:fixed;width:auto}table.fx td,table.fx th{overflow:hidden;text-overflow:ellipsis}
+table.fx{table-layout:fixed;width:auto}#t th,#t td{box-sizing:border-box}table.fx td,table.fx th{overflow:hidden;text-overflow:ellipsis}
 #tip{position:fixed;left:10px;right:10px;bottom:14px;background:#24303d;border:1px solid #3d5068;border-radius:10px;padding:10px 12px;font-size:14px;display:none;z-index:9;max-width:600px;margin:auto}
-.neg{color:#f66}
+.neg{color:#f66}a.pk{color:#7aa7ff;text-decoration:none;font-weight:600}a.pk:hover{text-decoration:underline}.sm{font-size:11px;color:#999}
 </style></head><body>
 
 <div id="app">
 <h1>Starlink Tracker — Elevate Parks</h1><div class="muted" id="sub"></div>
 <div class="cards" id="cards"></div>
-<div class="bar"><button onclick="csv()">Export CSV</button><span class="muted">Paying Customer and Monthly Charge save automatically on this device. Tap a dotted number to see its source.</span></div>
-<div class="tw"><table id="t"><thead><tr><th>Park Name</th><th>Address</th><th class="n"># Pads</th><th class="n"># Tenants</th><th>Paying Customer</th><th class="n">Monthly Charge</th></tr></thead><tbody id="tb"></tbody><tfoot><tr id="tf"></tr></tfoot></table></div>
-<div class="muted" style="margin:14px 0">Pads and tenants come from the saved Elevate OMs, with the source and date shown on tap or hover. Blank orange values have no saved OM or document to support them. Tenants = occupied lots.</div>
+<div class="bar"><button onclick="csv()">Export parks CSV</button><button onclick="csvAll()">Export all tenants CSV</button><span class="muted">Tap a park name to open its tenant list. Paying customers and monthly charge add up automatically from each park's tenants. Tenant details are stored only on this device.</span></div>
+<div class="tw"><table id="t"><thead><tr><th>Park Name</th><th>Address</th><th class="n"># Pads</th><th class="n"># Tenants</th><th class="n">Paying Customers</th><th class="n">Monthly Charge</th></tr></thead><tbody id="tb"></tbody><tfoot><tr id="tf"></tr></tfoot></table></div>
+<div class="muted" style="margin:14px 0">Click any park to list its tenants (name, lot, phone, email, paying, charge). Pads and tenants come from the saved Elevate OMs, with the source and date shown on tap or hover. Blank orange values have no saved OM or document to support them. Tenants = occupied lots.</div>
 </div>
 <div id="tip" onclick="this.style.display='none'"></div>
 <script>
-let D;const LS='starlink_edits_v1';let E={};try{E=JSON.parse(localStorage[LS]||'{}')}catch(x){}
-const b64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
-async function load(){return await (await fetch('data.json',{cache:'no-store'})).json();}
+const TK='starlink_tenants_v1';
+function loadT(){try{return JSON.parse(localStorage[TK]||'{}')}catch(x){return {}}}
+function saveT(T){localStorage[TK]=JSON.stringify(T)}
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const $=v=>'$'+(+v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-function num(v,src){return v==null?`<td class="n" data-v=""><span class="src gap" data-s="${esc(src)}" title="${esc(src)}">—</span></td>`:`<td class="n" data-v="${v}"><span class="src" data-s="${esc(src)}" title="${esc(src)}">${v.toLocaleString()}</span></td>`}
-function render(){
-document.getElementById('sub').textContent=D.rows.length+' parks across current Elevate investments · data updated '+D.updated;
-document.getElementById('tb').innerHTML=D.rows.map(r=>{const e=E[r.id]||{};return `<tr data-id="${r.id}"><td data-v="${esc(r.park)}"><div>${esc(r.park)}</div><div class="inv">${esc(r.inv)}</div></td>`+
-`<td data-v="${esc(r.addr)}">${r.addr?esc(r.addr):'<span class="gap">— not found</span>'}</td>`+num(r.pads,r.ps)+num(r.ten,r.ts)+
-`<td data-v="${esc(e.pay||'')}"><select onchange="ed(this,'pay')"><option value=""></option><option${e.pay=='Yes'?' selected':''}>Yes</option><option${e.pay=='No'?' selected':''}>No</option></select></td>`+
-`<td class="n" data-v="${e.chg??''}"><input type="number" inputmode="decimal" step="0.01" min="0" placeholder="$" value="${e.chg??''}" onchange="ed(this,'chg')"></td></tr>`}).join('');
-tot();}
-function tot(){const R=D.rows,s=k=>R.reduce((a,r)=>a+(r[k]||0),0);let pay=0,rev=0;R.forEach(r=>{const e=E[r.id]||{};if(e.pay=='Yes')pay++;rev+=+e.chg||0});
-document.getElementById('tf').innerHTML=`<td>TOTAL</td><td>${R.length} parks</td><td class="n">${s('pads').toLocaleString()}</td><td class="n">${s('ten').toLocaleString()}</td><td>${pay} paying</td><td class="n">${$(rev)}/mo</td>`;
-document.getElementById('cards').innerHTML=[['Parks',R.length],['Total pads',s('pads').toLocaleString()],['Total tenants',s('ten').toLocaleString()],['Paying customers',pay],['Monthly revenue',$(rev)]].map(c=>`<div class="card"><div class="l">${c[0]}</div><div class="v">${c[1]}</div></div>`).join('');}
-function ed(el,k){const tr=el.closest('tr'),id=tr.dataset.id;E[id]=E[id]||{};let v=el.value;if(k=='chg')v=v===''?null:Math.round(+v*100)/100;E[id][k]=v;el.parentNode.dataset.v=v??'';localStorage[LS]=JSON.stringify(E);tot();}
-function csv(){const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';const L=[['Park Name','Elevate Investment','Address','# Pads','# Tenants','Paying Customer','Monthly Charge','Pads Source','Tenants Source']];
-D.rows.forEach(r=>{const e=E[r.id]||{};L.push([r.park,r.inv,r.addr,r.pads,r.ten,e.pay||'',e.chg??'',r.ps,r.ts])});
-const b=new Blob([L.map(r=>r.map(q).join(',')).join('\n')],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='starlink-tracker-'+new Date().toISOString().slice(0,10)+'.csv';a.click();}
-document.addEventListener('click',e=>{const s=e.target.closest('.src');if(!s)return;const t=document.getElementById('tip');t.textContent=s.dataset.s;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',6000)});
-function rz(t){const ths=[...t.querySelectorAll('thead th')],W=ths.map(th=>th.getBoundingClientRect().width),tw=()=>t.style.width=W.reduce((a,b)=>a+b,0)+'px';
+function stats(L){L=L||[];let pay=0,rev=0;L.forEach(t=>{if(t.pay=='Yes'){pay++;rev+=+t.chg||0}});return {n:L.length,pay,rev}}
+const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+function dl(name,L){const b=new Blob([L.map(r=>r.map(q).join(',')).join('\n')],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();a.remove();}
+function parseCSV(s){s=s.replace(/^\uFEFF/,'');const R=[];let r=[],f='',i=0,Q=false;for(;i<s.length;i++){const c=s[i];if(Q){if(c=='"'){if(s[i+1]=='"'){f+='"';i++}else Q=false}else f+=c}else if(c=='"')Q=true;else if(c==','){r.push(f);f=''}else if(c=='\n'||c=='\r'){if(c=='\r'&&s[i+1]=='\n')i++;r.push(f);R.push(r);r=[];f=''}else f+=c}if(f!==''||r.length){r.push(f);R.push(r)}return R.filter(x=>x.some(v=>v.trim()!==''))}
+const TCOLS=['Tenant Name','Lot #','Phone','Email','Paying Customer','Monthly Charge'];
+const tRow=t=>[t.name,t.lot,t.phone,t.email,t.pay,t.chg??''];
+function rz(t,w0){const ths=[...t.querySelectorAll('thead th')],W=w0?w0.slice():ths.map(th=>th.getBoundingClientRect().width),tw=()=>t.style.width=W.reduce((a,b)=>a+b,0)+'px';
 ths.forEach((th,i)=>th.style.width=W[i]+'px');tw();t.classList.add('fx');
 ths.forEach((th,i)=>{const h=document.createElement('span');h.className='rz';h.title='Drag to resize';th.appendChild(h);
 h.addEventListener('click',e=>{e.stopPropagation();e.preventDefault()},true);
 h.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();h.setPointerCapture(e.pointerId);h.classList.add('on');const x0=e.clientX,w0=W[i];
-const mv=ev=>{W[i]=Math.max(50,w0+ev.clientX-x0);th.style.width=W[i]+'px';tw()};
+const mv=ev=>{W[i]=Math.max(40,w0+ev.clientX-x0);th.style.width=W[i]+'px';tw()};
 h.addEventListener('pointermove',mv);h.addEventListener('pointerup',()=>{h.classList.remove('on');h.removeEventListener('pointermove',mv)},{once:true})})})}
-function initW(){const t=document.getElementById('t'),m=innerWidth<700;const w=m?[150,170,66,76,96,104]:[250,330,75,85,130,130];t.querySelectorAll('thead th').forEach((th,i)=>th.style.width=w[i]+'px');rz(t);}
+function setW(t,w){rz(t,w)}
+
+
+let D,T=loadT();
+async function load(){return await (await fetch('data.json',{cache:'no-store'})).json();}
+function num(v,src){return v==null?`<td class="n" data-v=""><span class="src gap" data-s="${esc(src)}" title="${esc(src)}">—</span></td>`:`<td class="n" data-v="${v}"><span class="src" data-s="${esc(src)}" title="${esc(src)}">${v.toLocaleString()}</span></td>`}
+function render(){
+document.getElementById('sub').textContent=D.rows.length+' parks across current Elevate investments · data updated '+D.updated;
+document.getElementById('tb').innerHTML=D.rows.map(r=>{const s=stats(T[r.id]);return `<tr data-id="${r.id}"><td data-v="${esc(r.park)}"><a class="pk" href="park.html?id=${encodeURIComponent(r.id)}">${esc(r.park)}</a><div class="inv">${esc(r.inv)}</div></td>`+
+`<td data-v="${esc(r.addr)}">${r.addr?esc(r.addr):'<span class="gap">— not found</span>'}</td>`+num(r.pads,r.ps)+num(r.ten,r.ts)+
+`<td class="n" data-v="${s.pay}">${s.pay}<div class="sm">${s.n?'of '+s.n+' listed':'no tenants listed'}</div></td>`+
+`<td class="n" data-v="${s.rev}">${$(s.rev)}</td></tr>`}).join('');
+tot();}
+function tot(){const R=D.rows,s=k=>R.reduce((a,r)=>a+(r[k]||0),0);let pay=0,rev=0,n=0;R.forEach(r=>{const x=stats(T[r.id]);pay+=x.pay;rev+=x.rev;n+=x.n});
+document.getElementById('tf').innerHTML=`<td>TOTAL</td><td>${R.length} parks</td><td class="n">${s('pads').toLocaleString()}</td><td class="n">${s('ten').toLocaleString()}</td><td class="n">${pay} paying</td><td class="n">${$(rev)}/mo</td>`;
+document.getElementById('cards').innerHTML=[['Parks',R.length],['Total pads',s('pads').toLocaleString()],['Total tenants',s('ten').toLocaleString()],['Paying customers',pay],['Monthly revenue',$(rev)]].map(c=>`<div class="card"><div class="l">${c[0]}</div><div class="v">${c[1]}</div></div>`).join('');}
+function csv(){const L=[['Park Name','Elevate Investment','Address','# Pads','# Tenants','Paying Customers','Monthly Charge','Tenants Listed','Pads Source','Tenants Source']];
+D.rows.forEach(r=>{const s=stats(T[r.id]);L.push([r.park,r.inv,r.addr,r.pads,r.ten,s.pay,s.rev.toFixed(2),s.n,r.ps,r.ts])});dl('starlink-parks-'+new Date().toISOString().slice(0,10)+'.csv',L)}
+function csvAll(){const L=[['Park Name',...TCOLS]];D.rows.forEach(r=>(T[r.id]||[]).forEach(t=>L.push([r.park,...tRow(t)])));dl('starlink-all-tenants-'+new Date().toISOString().slice(0,10)+'.csv',L)}
+document.addEventListener('click',e=>{const s=e.target.closest('.src');if(!s)return;const t=document.getElementById('tip');t.textContent=s.dataset.s;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',6000)});
 async function go(){try{D=await load();}catch(x){document.getElementById('app').style.display='block';document.getElementById('sub').textContent='Could not load data: '+x.message;return;}
-document.getElementById('app').style.display='block';try{render();initW()}catch(x){document.getElementById('sub').textContent='Display error: '+x.message;console.error(x)}}
+document.getElementById('app').style.display='block';try{render();setW(document.getElementById('t'),innerWidth<700?[150,170,66,76,92,100]:[260,330,75,85,120,130])}catch(x){document.getElementById('sub').textContent='Display error: '+x.message;console.error(x)}}
+addEventListener('pageshow',e=>{if(e.persisted&&D){T=loadT();render()}});
 go();
 </script><!--SORTABLE-START--><script>
 /* Shared sortable tables (Grok Bot trackers). Click any header: asc/desc toggle with ▲/▼.
