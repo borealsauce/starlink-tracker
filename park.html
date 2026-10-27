@@ -1,7 +1,7 @@
 <!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Tenants — Elevate Starlink Tracker</title>
 <style>:root{--bg:#e4e8ec;--card:rgba(255,255,255,.96);--ink:#3f3f3f;--mut:#6b7178;--line:#dde2e7;--line2:#eef1f4;--acc:#00a4ec;--acct:#0083bd;--accs:#e6f6fd;--navy:#3f3f3f;--ok:#047857;--warn:#b45309}
 *{box-sizing:border-box}
-html{background:#dde2e7}body{margin:0;min-height:100vh;background:linear-gradient(160deg,#eef1f4 0%,#e1e6eb 55%,#d6dce2 100%);color:var(--ink);font:14px/1.45 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+html{background:#3a3e43}body{margin:0;min-height:100vh;background:linear-gradient(160deg,#4a4f55 0%,#42464c 50%,#3a3e43 100%);color:var(--ink);font:14px/1.45 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 #app{display:none;max-width:1120px;margin:auto;padding:28px 20px 40px}
 header{margin-bottom:20px}.eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--acc);font-weight:600;margin-bottom:4px}
 h1{font-size:26px;line-height:1.2;margin:0;font-weight:700;letter-spacing:-.02em;color:var(--navy)}
@@ -36,7 +36,7 @@ table.fx{table-layout:fixed;width:auto}table.fx td,table.fx th{overflow:hidden;t
 .note{margin:14px 2px 0;font-size:12px;color:var(--mut)}
 @media(max-width:600px){#app{padding:18px 12px 32px}h1{font-size:22px}.tiles{grid-template-columns:repeat(2,1fr);gap:10px}a.tile{padding:12px}.tile .nm{font-size:14px}.tile .st{gap:8px}.cards{grid-template-columns:repeat(2,1fr);gap:10px}.card{padding:12px}.card .v{font-size:19px}th,td{padding:8px 9px}}
 
-body{position:relative}body:before{content:"";position:absolute;inset:0;background:url(elevate-wall.png) 0 0/260px auto repeat;pointer-events:none;z-index:0}
+body{position:relative}body:before{content:"";position:absolute;inset:0;background:url(elevate-wall.png) 0 0/116px auto repeat;pointer-events:none;z-index:0}
 #app{position:relative;z-index:1}#tip{z-index:20}
 header.brand{display:flex;align-items:center;gap:18px;padding:16px 20px;background:var(--card);border:1px solid var(--line);border-top:3px solid var(--acc);border-radius:12px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 header.brand img{height:52px;width:auto;display:block}header.brand .tx{border-left:1px solid var(--line);padding-left:18px}
@@ -50,6 +50,10 @@ button.pri{background:var(--acc);border-color:var(--acc)}button.pri:hover{backgr
 #tip{background:#3f3f3f}
 @media(max-width:600px){header.brand{flex-direction:column;align-items:flex-start;gap:10px;padding:14px}header.brand img{height:42px}header.brand .tx{border-left:0;padding-left:0}}
 table.fx tfoot td{overflow:visible}
+/* dark background: text sitting directly on it */
+#app>h2{color:#7fd3f7}#app>.note{color:#c9ced4}a.back{color:#9fdcf8!important}a.back:hover{color:#fff!important}
+.tw{box-shadow:0 4px 18px rgba(0,0,0,.18)}.card,header.brand{box-shadow:0 4px 14px rgba(0,0,0,.15)}
+td.inv{color:var(--mut);font-size:13px}
 
 td{padding:5px 6px}td input,td select{width:100%;padding:7px 8px;border:1px solid transparent;border-radius:6px;background:transparent;font-size:14px}td input:hover,td select:hover{border-color:var(--line)}td input:focus,td select:focus{outline:none;border-color:var(--acc);background:#fff;box-shadow:0 0 0 3px var(--accs)}td.n input{text-align:right}
 .back{color:var(--acc);text-decoration:none;font-size:14px;font-weight:500;display:inline-block;margin-bottom:12px}.del{border:none;background:none;color:#94a3b8;font-size:16px;padding:4px 8px}.del:hover{color:#dc2626;background:#fef2f2}

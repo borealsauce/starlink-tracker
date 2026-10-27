@@ -1,7 +1,7 @@
 <!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Elevate Starlink Tracker</title>
 <style>:root{--bg:#e4e8ec;--card:rgba(255,255,255,.96);--ink:#3f3f3f;--mut:#6b7178;--line:#dde2e7;--line2:#eef1f4;--acc:#00a4ec;--acct:#0083bd;--accs:#e6f6fd;--navy:#3f3f3f;--ok:#047857;--warn:#b45309}
 *{box-sizing:border-box}
-html{background:#dde2e7}body{margin:0;min-height:100vh;background:linear-gradient(160deg,#eef1f4 0%,#e1e6eb 55%,#d6dce2 100%);color:var(--ink);font:14px/1.45 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+html{background:#3a3e43}body{margin:0;min-height:100vh;background:linear-gradient(160deg,#4a4f55 0%,#42464c 50%,#3a3e43 100%);color:var(--ink);font:14px/1.45 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 #app{display:none;max-width:1120px;margin:auto;padding:28px 20px 40px}
 header{margin-bottom:20px}.eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--acc);font-weight:600;margin-bottom:4px}
 h1{font-size:26px;line-height:1.2;margin:0;font-weight:700;letter-spacing:-.02em;color:var(--navy)}
@@ -36,7 +36,7 @@ table.fx{table-layout:fixed;width:auto}table.fx td,table.fx th{overflow:hidden;t
 .note{margin:14px 2px 0;font-size:12px;color:var(--mut)}
 @media(max-width:600px){#app{padding:18px 12px 32px}h1{font-size:22px}.tiles{grid-template-columns:repeat(2,1fr);gap:10px}a.tile{padding:12px}.tile .nm{font-size:14px}.tile .st{gap:8px}.cards{grid-template-columns:repeat(2,1fr);gap:10px}.card{padding:12px}.card .v{font-size:19px}th,td{padding:8px 9px}}
 
-body{position:relative}body:before{content:"";position:absolute;inset:0;background:url(elevate-wall.png) 0 0/260px auto repeat;pointer-events:none;z-index:0}
+body{position:relative}body:before{content:"";position:absolute;inset:0;background:url(elevate-wall.png) 0 0/116px auto repeat;pointer-events:none;z-index:0}
 #app{position:relative;z-index:1}#tip{z-index:20}
 header.brand{display:flex;align-items:center;gap:18px;padding:16px 20px;background:var(--card);border:1px solid var(--line);border-top:3px solid var(--acc);border-radius:12px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 header.brand img{height:52px;width:auto;display:block}header.brand .tx{border-left:1px solid var(--line);padding-left:18px}
@@ -50,15 +50,17 @@ button.pri{background:var(--acc);border-color:var(--acc)}button.pri:hover{backgr
 #tip{background:#3f3f3f}
 @media(max-width:600px){header.brand{flex-direction:column;align-items:flex-start;gap:10px;padding:14px}header.brand img{height:42px}header.brand .tx{border-left:0;padding-left:0}}
 table.fx tfoot td{overflow:visible}
+/* dark background: text sitting directly on it */
+#app>h2{color:#7fd3f7}#app>.note{color:#c9ced4}a.back{color:#9fdcf8!important}a.back:hover{color:#fff!important}
+.tw{box-shadow:0 4px 18px rgba(0,0,0,.18)}.card,header.brand{box-shadow:0 4px 14px rgba(0,0,0,.15)}
+td.inv{color:var(--mut);font-size:13px}
 </style></head><body>
 <div id="app">
 <header class="brand"><img src="elevate-logo.png" alt="Elevate Commercial"><div class="tx"><div class="eyebrow">Starlink Internet · Elevate Parks</div><h1>Elevate Starlink Tracker</h1><div class="muted" id="sub"></div></div></header>
 <div class="cards" id="cards"></div>
-<h2>Parks</h2>
-<div class="tiles" id="tiles"></div>
 <h2>Summary</h2>
 <div class="bar"><button onclick="csv()">Export parks CSV</button><button onclick="csvAll()">Export all tenants CSV</button></div>
-<div class="tw"><table id="t"><thead><tr><th>Park Name</th><th>Address</th><th class="n"># Pads</th><th class="n"># Tenants</th><th class="n">Paying Customers</th><th class="n">Monthly Charge</th></tr></thead><tbody id="tb"></tbody><tfoot><tr id="tf"></tr></tfoot></table></div>
+<div class="tw"><table id="t"><thead><tr><th>Park Name</th><th>Elevate Investment</th><th>Address</th><th class="n"># Pads</th><th class="n"># Tenants</th><th class="n">Paying Customers</th><th class="n">Monthly Charge</th></tr></thead><tbody id="tb"></tbody><tfoot><tr id="tf"></tr></tfoot></table></div>
 <p class="note">Open a park to manage its tenants. Paying customers and monthly charge total automatically from each park's tenant list, which is stored only on this device. Pad and tenant counts come from the saved Elevate OMs and rent rolls; tap a dotted number to see its source.</p>
 </div>
 <div id="tip" onclick="this.style.display='none'"></div>
@@ -88,23 +90,22 @@ let D,T=loadT();
 async function load(){return await (await fetch('data.json',{cache:'no-store'})).json();}
 function num(v,src){return v==null?`<td class="n" data-v=""><span class="src gap" data-s="${esc(src)}" title="${esc(src)}">—</span></td>`:`<td class="n" data-v="${v}"><span class="src" data-s="${esc(src)}" title="${esc(src)}">${v.toLocaleString()}</span></td>`}
 function render(){
-document.getElementById('sub').textContent=D.rows.length+' parks · updated '+new Date(D.updated+'T12:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+document.getElementById('sub').textContent=D.investments+' Elevate investments · '+D.rows.length+' parks · updated '+new Date(D.updated+'T12:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
 const f=v=>v==null?'—':v.toLocaleString();
-document.getElementById('tiles').innerHTML=D.rows.map(r=>{const s=stats(T[r.id]);return `<a class="tile" href="park.html?id=${encodeURIComponent(r.id)}"><div class="nm">${esc(r.park)}</div><div class="st"><div><b>${f(r.pads)}</b>pads</div><div><b>${f(r.ten)}</b>tenants</div></div><div class="ft"><span${s.pay?' class="pay"':''}>${s.pay} paying</span><span>${$(s.rev)}/mo</span></div></a>`}).join('');
-document.getElementById('tb').innerHTML=D.rows.map(r=>{const s=stats(T[r.id]);return `<tr data-id="${r.id}"><td data-v="${esc(r.park)}"><a class="pk" href="park.html?id=${encodeURIComponent(r.id)}">${esc(r.park)}</a></td>`+
+document.getElementById('tb').innerHTML=D.rows.map(r=>{const s=stats(T[r.id]);return `<tr data-id="${r.id}"><td data-v="${esc(r.park)}"><a class="pk" href="park.html?id=${encodeURIComponent(r.id)}">${esc(r.park)}</a></td><td data-v="${esc(r.inv)}" class="inv">${esc(r.inv)}</td>`+
 `<td data-v="${esc(r.addr)}">${r.addr?esc(r.addr):'<span class="gap">— not found</span>'}</td>`+num(r.pads,r.ps)+num(r.ten,r.ts)+
 `<td class="n" data-v="${s.pay}">${s.pay}</td>`+
 `<td class="n" data-v="${s.rev}">${$(s.rev)}</td></tr>`}).join('');
 tot();}
 function tot(){const R=D.rows,s=k=>R.reduce((a,r)=>a+(r[k]||0),0);let pay=0,rev=0,n=0;R.forEach(r=>{const x=stats(T[r.id]);pay+=x.pay;rev+=x.rev;n+=x.n});
-document.getElementById('tf').innerHTML=`<td>Total</td><td>${R.length} parks</td><td class="n">${s('pads').toLocaleString()}</td><td class="n">${s('ten').toLocaleString()}</td><td class="n">${pay} paying</td><td class="n">${$(rev)}/mo</td>`;
-document.getElementById('cards').innerHTML=[['Parks',R.length],['Total pads',s('pads').toLocaleString()],['Total tenants',s('ten').toLocaleString()],['Paying customers',pay],['Monthly revenue',$(rev)]].map(c=>`<div class="card"><div class="l">${c[0]}</div><div class="v">${c[1]}</div></div>`).join('');}
+document.getElementById('tf').innerHTML=`<td>Total · ${R.length} parks</td><td>${D.investments} investments</td><td></td><td class="n">${s('pads').toLocaleString()}</td><td class="n">${s('ten').toLocaleString()}</td><td class="n">${pay} paying</td><td class="n">${$(rev)}/mo</td>`;
+document.getElementById('cards').innerHTML=[['Investments',D.investments],['Parks',R.length],['Total pads',s('pads').toLocaleString()],['Total tenants',s('ten').toLocaleString()],['Paying customers',pay],['Monthly revenue',$(rev)]].map(c=>`<div class="card"><div class="l">${c[0]}</div><div class="v">${c[1]}</div></div>`).join('');}
 function csv(){const L=[['Park Name','Elevate Investment','Address','# Pads','# Tenants','Paying Customers','Monthly Charge','Tenants Listed','Pads Source','Tenants Source']];
 D.rows.forEach(r=>{const s=stats(T[r.id]);L.push([r.park,r.inv,r.addr,r.pads,r.ten,s.pay,s.rev.toFixed(2),s.n,r.ps,r.ts])});dl('starlink-parks-'+new Date().toISOString().slice(0,10)+'.csv',L)}
 function csvAll(){const L=[['Park Name',...TCOLS]];D.rows.forEach(r=>(T[r.id]||[]).forEach(t=>L.push([r.park,...tRow(t)])));dl('starlink-all-tenants-'+new Date().toISOString().slice(0,10)+'.csv',L)}
 document.addEventListener('click',e=>{const s=e.target.closest('.src');if(!s)return;const t=document.getElementById('tip');t.textContent=s.dataset.s;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',6000)});
 async function go(){try{D=await load();}catch(x){document.getElementById('app').style.display='block';document.getElementById('sub').textContent='Could not load data: '+x.message;return;}
-document.getElementById('app').style.display='block';try{render();setW(document.getElementById('t'),innerWidth<700?[150,180,70,82,96,108]:[250,350,90,100,140,140])}catch(x){document.getElementById('sub').textContent='Display error: '+x.message;console.error(x)}}
+document.getElementById('app').style.display='block';try{render();setW(document.getElementById('t'),innerWidth<700?[150,140,180,70,82,96,108]:[200,165,265,72,82,140,120])}catch(x){document.getElementById('sub').textContent='Display error: '+x.message;console.error(x)}}
 addEventListener('pageshow',e=>{if(e.persisted&&D){T=loadT();render()}});
 go();
 </script><!--SORTABLE-START--><script>
