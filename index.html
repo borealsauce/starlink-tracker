@@ -1,0 +1,134 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Starlink Tracker</title>
+<style>
+body{font-family:-apple-system,system-ui,sans-serif;margin:0;background:#0f1419;color:#e6e6e6}
+#gate{display:flex;justify-content:center;align-items:center;min-height:100vh}#gate form{text-align:center}
+input,button,select{font-size:16px;padding:8px;border-radius:8px;border:1px solid #444;background:#1b222b;color:#fff}
+#gate input,#gate button{font-size:18px;padding:10px;margin:4px}
+#app{display:none;max-width:1100px;margin:auto;padding:12px}h1{font-size:22px;margin:8px 0}
+.muted{color:#999;font-size:13px}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:8px;margin:10px 0}
+.card{background:#1b222b;border-radius:10px;padding:10px}.card .l{font-size:12px;color:#aaa}.card .v{font-size:18px;font-weight:600}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}th,td{padding:7px 8px;border-bottom:1px solid #2a323c;text-align:left;vertical-align:middle}
+td.n,th.n{text-align:right}th{background:#1b222b;position:sticky;top:0;white-space:nowrap}
+tfoot td{font-weight:700;background:#151b22}
+th:first-child,td:first-child{position:sticky;left:0;background:#0f1419;z-index:1}th:first-child{background:#1b222b;z-index:3}tfoot td:first-child{background:#151b22}
+.inv{font-size:11px;color:#8aa;margin-top:2px}.src{border-bottom:1px dotted #7aa7ff;cursor:help}.gap{color:#f6b04e}
+td select,td input{width:100%;box-sizing:border-box;padding:6px}td input{text-align:right}
+th{position:sticky}.rz{position:absolute;right:0;top:0;bottom:0;width:12px;cursor:col-resize;touch-action:none;z-index:4}.rz:after{content:"";position:absolute;right:4px;top:25%;bottom:25%;width:2px;background:#3a4152}.rz:hover:after,.rz.on:after{background:#22c55e}
+table.fx{table-layout:fixed;width:auto}table.fx td,table.fx th{overflow:hidden;text-overflow:ellipsis}
+#tip{position:fixed;left:10px;right:10px;bottom:14px;background:#24303d;border:1px solid #3d5068;border-radius:10px;padding:10px 12px;font-size:14px;display:none;z-index:9;max-width:600px;margin:auto}
+.neg{color:#f66}
+</style></head><body>
+<div id="gate"><form onsubmit="go(event)"><h1>Starlink Tracker</h1><p class="muted">Enter password</p><input id="pw" type="password" inputmode="numeric" autocomplete="current-password" autofocus><button>Open</button><div id="err" class="neg"></div></form></div>
+<div id="app">
+<h1>Starlink Tracker — Elevate Parks</h1><div class="muted" id="sub"></div>
+<div class="cards" id="cards"></div>
+<div class="bar"><button onclick="csv()">Export CSV</button><span class="muted">Paying Customer and Monthly Charge save automatically on this device. Tap a dotted number to see its source.</span></div>
+<div class="tw"><table id="t"><thead><tr><th>Park Name</th><th>Address</th><th class="n"># Pads</th><th class="n"># Tenants</th><th>Paying Customer</th><th class="n">Monthly Charge</th></tr></thead><tbody id="tb"></tbody><tfoot><tr id="tf"></tr></tfoot></table></div>
+<div class="muted" style="margin:14px 0">Pads and tenants come from the saved Elevate OMs, with the source and date shown on tap or hover. Blank orange values have no saved OM or document to support them. Tenants = occupied lots.</div>
+</div>
+<div id="tip" onclick="this.style.display='none'"></div>
+<script>
+let D;const LS='starlink_edits_v1';let E={};try{E=JSON.parse(localStorage[LS]||'{}')}catch(x){}
+const b64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+async function decrypt(pw){const e=await (await fetch('data.enc.json',{cache:'no-store'})).json();
+const km=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);
+const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt:b64(e.salt),iterations:e.iter,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['decrypt']);
+return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:b64(e.iv)},key,b64(e.ct))));}
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const $=v=>'$'+(+v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+function num(v,src){return v==null?`<td class="n" data-v=""><span class="src gap" data-s="${esc(src)}" title="${esc(src)}">—</span></td>`:`<td class="n" data-v="${v}"><span class="src" data-s="${esc(src)}" title="${esc(src)}">${v.toLocaleString()}</span></td>`}
+function render(){
+document.getElementById('sub').textContent=D.rows.length+' parks across current Elevate investments · data updated '+D.updated;
+document.getElementById('tb').innerHTML=D.rows.map(r=>{const e=E[r.id]||{};return `<tr data-id="${r.id}"><td data-v="${esc(r.park)}"><div>${esc(r.park)}</div><div class="inv">${esc(r.inv)}</div></td>`+
+`<td data-v="${esc(r.addr)}">${r.addr?esc(r.addr):'<span class="gap">— not found</span>'}</td>`+num(r.pads,r.ps)+num(r.ten,r.ts)+
+`<td data-v="${esc(e.pay||'')}"><select onchange="ed(this,'pay')"><option value=""></option><option${e.pay=='Yes'?' selected':''}>Yes</option><option${e.pay=='No'?' selected':''}>No</option></select></td>`+
+`<td class="n" data-v="${e.chg??''}"><input type="number" inputmode="decimal" step="0.01" min="0" placeholder="$" value="${e.chg??''}" onchange="ed(this,'chg')"></td></tr>`}).join('');
+tot();}
+function tot(){const R=D.rows,s=k=>R.reduce((a,r)=>a+(r[k]||0),0);let pay=0,rev=0;R.forEach(r=>{const e=E[r.id]||{};if(e.pay=='Yes')pay++;rev+=+e.chg||0});
+document.getElementById('tf').innerHTML=`<td>TOTAL</td><td>${R.length} parks</td><td class="n">${s('pads').toLocaleString()}</td><td class="n">${s('ten').toLocaleString()}</td><td>${pay} paying</td><td class="n">${$(rev)}/mo</td>`;
+document.getElementById('cards').innerHTML=[['Parks',R.length],['Total pads',s('pads').toLocaleString()],['Total tenants',s('ten').toLocaleString()],['Paying customers',pay],['Monthly revenue',$(rev)]].map(c=>`<div class="card"><div class="l">${c[0]}</div><div class="v">${c[1]}</div></div>`).join('');}
+function ed(el,k){const tr=el.closest('tr'),id=tr.dataset.id;E[id]=E[id]||{};let v=el.value;if(k=='chg')v=v===''?null:Math.round(+v*100)/100;E[id][k]=v;el.parentNode.dataset.v=v??'';localStorage[LS]=JSON.stringify(E);tot();}
+function csv(){const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';const L=[['Park Name','Elevate Investment','Address','# Pads','# Tenants','Paying Customer','Monthly Charge','Pads Source','Tenants Source']];
+D.rows.forEach(r=>{const e=E[r.id]||{};L.push([r.park,r.inv,r.addr,r.pads,r.ten,e.pay||'',e.chg??'',r.ps,r.ts])});
+const b=new Blob([L.map(r=>r.map(q).join(',')).join('\n')],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='starlink-tracker-'+new Date().toISOString().slice(0,10)+'.csv';a.click();}
+document.addEventListener('click',e=>{const s=e.target.closest('.src');if(!s)return;const t=document.getElementById('tip');t.textContent=s.dataset.s;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',6000)});
+function rz(t){const ths=[...t.querySelectorAll('thead th')],W=ths.map(th=>th.getBoundingClientRect().width),tw=()=>t.style.width=W.reduce((a,b)=>a+b,0)+'px';
+ths.forEach((th,i)=>th.style.width=W[i]+'px');tw();t.classList.add('fx');
+ths.forEach((th,i)=>{const h=document.createElement('span');h.className='rz';h.title='Drag to resize';th.appendChild(h);
+h.addEventListener('click',e=>{e.stopPropagation();e.preventDefault()},true);
+h.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();h.setPointerCapture(e.pointerId);h.classList.add('on');const x0=e.clientX,w0=W[i];
+const mv=ev=>{W[i]=Math.max(50,w0+ev.clientX-x0);th.style.width=W[i]+'px';tw()};
+h.addEventListener('pointermove',mv);h.addEventListener('pointerup',()=>{h.classList.remove('on');h.removeEventListener('pointermove',mv)},{once:true})})})}
+function initW(){const t=document.getElementById('t'),m=innerWidth<700;const w=m?[150,170,66,76,96,104]:[250,330,75,85,130,130];t.querySelectorAll('thead th').forEach((th,i)=>th.style.width=w[i]+'px');rz(t);}
+async function go(e){e&&e.preventDefault();try{const pw=e?document.getElementById('pw').value:sessionStorage.slpw;D=await decrypt(pw);sessionStorage.slpw=pw;}catch(x){if(e)document.getElementById('err').textContent='Wrong password';return;}
+document.getElementById('gate').style.display='none';document.getElementById('app').style.display='block';try{render();initW()}catch(x){document.getElementById('sub').textContent='Display error: '+x.message;console.error(x)}}
+try{if(sessionStorage.slpw)go()}catch(x){}
+</script><!--SORTABLE-START--><script>
+/* Shared sortable tables (Grok Bot trackers). Click any header: asc/desc toggle with ▲/▼.
+   Works on dynamically rendered tables via event delegation. Totals (tfoot, .total/.ft/.tot rows,
+   or first cell TOTAL/ALL-TIME/GRAND) stay pinned at bottom. Group-label rows (fewer cells / colspan)
+   keep their members: sorting happens within each group. Uses td[data-v] when present.
+   Skip: th with own onclick, th.nosort, or table[data-nosort]. */
+(function(){
+  if(window.__sortableShared)return;window.__sortableShared=1;
+  var st=document.createElement('style');
+  st.textContent='table:not([data-nosort]) th:not(.nosort){cursor:pointer;user-select:none}th .srt-ar{font-size:.8em;opacity:.85;margin-left:3px}';
+  (document.head||document.documentElement).appendChild(st);
+  var MON={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+  function key(cell){
+    if(!cell)return null;
+    var raw=cell.dataset&&cell.dataset.v!=null?cell.dataset.v:cell.textContent;
+    var s=String(raw).replace(/[▲▼]/g,'').trim();
+    if(!s||s==='—'||s==='-'||s==='–'||/^n\/?a$/i.test(s))return null;
+    var m;
+    if((m=s.match(/^(\d{4})-(\d{2})(?:-(\d{2}))?/)))return {n:Date.UTC(+m[1],+m[2]-1,+(m[3]||1))};
+    if((m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/))){var y=+m[3];if(y<100)y+=2000;return {n:Date.UTC(y,+m[1]-1,+m[2])};}
+    if((m=s.match(/^([A-Za-z]{3})[a-z]*\.? (\d{1,2}),? (\d{4})$/))&&MON[m[1].toLowerCase()])return {n:Date.UTC(+m[3],MON[m[1].toLowerCase()]-1,+m[2])};
+    if((m=s.match(/^([A-Za-z]{3})[a-z]* (\d{4})$/))&&MON[m[1].toLowerCase()])return {n:Date.UTC(+m[2],MON[m[1].toLowerCase()]-1,1)};
+    if((m=s.match(/^Q([1-4]) (\d{4})$/i)))return {n:Date.UTC(+m[2],(+m[1]-1)*3,1)};
+    var t=s.replace(/[$,%x×\s]|USD/gi,'').replace(/^\+/,'').replace(/[−–]/g,'-');
+    var neg=/^\(.*\)$/.test(t);if(neg)t=t.slice(1,-1);
+    var mult=1;if((m=t.match(/^(-?[\d.]+)([KMB])$/i))){t=m[1];mult={k:1e3,m:1e6,b:1e9}[m[2].toLowerCase()];}
+    if(/^-?\d*\.?\d+$/.test(t))return {n:parseFloat(t)*mult*(neg?-1:1)};
+    return {s:s.toLowerCase()};
+  }
+  function pinned(r){
+    if(r.parentElement&&r.parentElement.tagName==='TFOOT')return true;
+    if(/(^|\s)(total|totals|ft|tot|sum|grand|pinned)(\s|$)/i.test(r.className))return true;
+    var c=r.cells[0];return !!c&&/^\s*(TOTAL|TOTALS|ALL-TIME|GRAND TOTAL)\b/i.test(c.textContent);
+  }
+  document.addEventListener('click',function(e){
+    var th=e.target.closest&&e.target.closest('th');if(!th||th.onclick||th.classList.contains('nosort'))return;
+    var tb=th.closest('table');if(!tb||tb.hasAttribute('data-nosort'))return;
+    var hr=th.parentElement;if(hr.parentElement.tagName==='TFOOT')return;
+    var ci=0;for(var k=0;k<hr.cells.length&&hr.cells[k]!==th;k++)ci+=hr.cells[k].colSpan||1;
+    var ncol=0;for(k=0;k<hr.cells.length;k++)ncol+=hr.cells[k].colSpan||1;
+    var dir=th.dataset.sdir==='asc'?'desc':'asc',m=dir==='asc'?1:-1;
+    tb.querySelectorAll('th').forEach(function(x){delete x.dataset.sdir;var a=x.querySelector('.srt-ar');if(a)a.remove();});
+    th.dataset.sdir=dir;var ar=document.createElement('span');ar.className='srt-ar';ar.textContent=dir==='asc'?'▲':'▼';th.appendChild(ar);
+    var bodies=tb.tBodies.length?[].slice.call(tb.tBodies):[tb];
+    bodies.forEach(function(body){
+      var all=[].slice.call(body.rows).filter(function(r){return r!==hr&&!(r.cells.length&&r.cells[0].tagName==='TH'&&!r.querySelector('td'));});
+      var pins=[],groups=[{head:null,rows:[]}];
+      all.forEach(function(r){
+        if(pinned(r)){pins.push(r);return;}
+        var w=0;for(var j=0;j<r.cells.length;j++)w+=r.cells[j].colSpan||1;
+        if(r.cells.length===1&&ncol>1)groups.push({head:r,rows:[]});else groups[groups.length-1].rows.push(r);
+      });
+      function cellAt(r){var x=0;for(var j=0;j<r.cells.length;j++){if(x===ci)return r.cells[j];x+=r.cells[j].colSpan||1;}return null;}
+      groups.forEach(function(g){
+        g.rows.sort(function(a,b){var A=key(cellAt(a)),B=key(cellAt(b));
+          if(!A&&!B)return 0;if(!A)return 1;if(!B)return -1;
+          if(A.n!=null&&B.n!=null)return (A.n-B.n)*m;
+          return String(A.s!=null?A.s:A.n).localeCompare(String(B.s!=null?B.s:B.n),undefined,{numeric:true})*m;});
+        if(g.head)body.appendChild(g.head);g.rows.forEach(function(r){body.appendChild(r);});
+      });
+      pins.forEach(function(r){body.appendChild(r);});
+    });
+  },false);
+})();
+
+</script><!--SORTABLE-END-->
+</body></html>
