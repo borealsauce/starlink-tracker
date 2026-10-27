@@ -71,7 +71,14 @@ td{padding:5px 6px}td input,td select{width:100%;padding:7px 8px;border:1px soli
 <div id="tip" onclick="this.style.display='none'"></div>
 <script>
 const TK='starlink_tenants_v1';
-function loadT(){try{return JSON.parse(localStorage[TK]||'{}')}catch(x){return {}}}
+// v2: one row per Elevate investment. Old per-park keys of multi-park deals are merged (tenants tagged with sp = sub-park id); a one-time backup is kept.
+const MERGE={lakecounty:['mentor','kirtland'],pocatello:['belaire','cowboy'],columbus2:['colwest','coleast']};
+function loadT(){let T;try{T=JSON.parse(localStorage[TK]||'{}')}catch(x){return {}}
+let ch=false;for(const nk in MERGE)for(const ok of MERGE[nk])if(Array.isArray(T[ok])){
+if(!ch&&!localStorage[TK+'_backup_premerge'])localStorage[TK+'_backup_premerge']=localStorage[TK];ch=true;
+T[nk]=(T[nk]||[]).concat(T[ok].map(t=>Object.assign({},t,{sp:t.sp||ok})));delete T[ok]}
+if(ch)try{localStorage[TK]=JSON.stringify(T)}catch(x){}
+return T}
 function saveT(T){localStorage[TK]=JSON.stringify(T)}
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const $=v=>'$'+(+v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -91,40 +98,40 @@ h.addEventListener('pointermove',mv);h.addEventListener('pointerup',()=>{h.class
 function setW(t,w){rz(t,w)}
 
 let D,P,T=loadT(),id=new URLSearchParams(location.search).get('id');
-const L=()=>T[id]||(T[id]=[]);
+const L=()=>T[id]||(T[id]=[]);let MP=false;const spn=k=>(P.subs.find(s=>s.id==k)||{}).park||'';
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 function toast(m){const t=document.getElementById('tip');t.textContent=m;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',5000)}
-function row(t){return `<tr data-k="${t.k}"><td data-v="${esc(t.name)}"><input class="l" data-f="name" value="${esc(t.name)}" placeholder="Name"></td>`+
+function row(t){return `<tr data-k="${t.k}"><td data-v="${esc(t.name)}"><input class="l" data-f="name" value="${esc(t.name)}" placeholder="Name"></td>`+(MP?`<td data-v="${esc(spn(t.sp))}"><select data-f="sp"><option value=""></option>${P.subs.map(s=>`<option value="${s.id}"${t.sp==s.id?' selected':''}>${esc(s.park)}</option>`).join('')}</select></td>`:'')+
 `<td data-v="${esc(t.lot)}"><input class="l" data-f="lot" value="${esc(t.lot)}"></td>`+
 `<td data-v="${esc(t.phone)}"><input class="l" type="tel" data-f="phone" value="${esc(t.phone)}"></td>`+
 `<td data-v="${esc(t.email)}"><input class="l" type="email" data-f="email" value="${esc(t.email)}"></td>`+
 `<td data-v="${esc(t.pay)}"><select data-f="pay"><option value=""></option><option${t.pay=='Yes'?' selected':''}>Yes</option><option${t.pay=='No'?' selected':''}>No</option></select></td>`+
 `<td class="n" data-v="${t.chg??''}"><input type="number" inputmode="decimal" step="0.01" min="0" data-f="chg" value="${t.chg??''}"></td>`+
 `<td><button class="del" title="Delete tenant" onclick="del('${t.k}')">✕</button></td></tr>`}
-function render(){const A=L();document.getElementById('tb').innerHTML=A.length?A.map(row).join(''):'';if(!A.length)document.getElementById('tb').innerHTML='<tr><td colspan="7" class="empty">No tenants yet. Tap “+ Add tenant” or “Import CSV”.</td></tr>';tot();filt()}
+function render(){const A=L();document.getElementById('tb').innerHTML=A.length?A.map(row).join(''):'';if(!A.length)document.getElementById('tb').innerHTML=`<tr><td colspan="${MP?8:7}" class="empty">No tenants yet. Tap “+ Add tenant” or “Import CSV”.</td></tr>`;tot();filt()}
 function tot(){const s=stats(L());
-document.getElementById('tf').innerHTML=`<td>Total</td><td>${s.n} listed</td><td></td><td></td><td>${s.pay} paying</td><td class="n">${$(s.rev)}/mo</td><td></td>`;
+document.getElementById('tf').innerHTML=`<td>Total</td>${MP?'<td></td>':''}<td>${s.n} listed</td><td></td><td></td><td>${s.pay} paying</td><td class="n">${$(s.rev)}/mo</td><td></td>`;
 document.getElementById('cards').innerHTML=[['Pads (OM)',P.pads??'—'],['Tenants (OM)',P.ten??'—'],['Tenants listed',s.n],['Paying customers',s.pay],['Monthly revenue',$(s.rev)]].map(c=>`<div class="card"><div class="l">${c[0]}</div><div class="v">${c[1]}</div></div>`).join('')}
 function save(){saveT(T);tot()}
 document.addEventListener('input',e=>{const f=e.target.dataset.f;if(!f)return;const tr=e.target.closest('tr'),t=L().find(x=>x.k==tr.dataset.k);if(!t)return;let v=e.target.value;
-if(f=='chg')v=v===''?'':+v;t[f]=v;e.target.closest('td').dataset.v=v;save()});
-function add(){const t={k:uid(),name:'',lot:'',phone:'',email:'',pay:'',chg:''};L().unshift(t);save();document.getElementById('q').value='';render();document.querySelector(`tr[data-k="${t.k}"] input`).focus()}
+if(f=='chg')v=v===''?'':+v;t[f]=v;e.target.closest('td').dataset.v=f=='sp'?spn(v):v;save()});
+function add(){const t={k:uid(),sp:'',name:'',lot:'',phone:'',email:'',pay:'',chg:''};L().unshift(t);save();document.getElementById('q').value='';render();document.querySelector(`tr[data-k="${t.k}"] input`).focus()}
 function del(k){const t=L().find(x=>x.k==k);if(!t||!confirm('Delete '+(t.name||'this tenant')+'?'))return;T[id]=L().filter(x=>x.k!=k);save();render()}
-function filt(){const q=document.getElementById('q').value.trim().toLowerCase();document.querySelectorAll('#tb tr[data-k]').forEach(tr=>{const t=L().find(x=>x.k==tr.dataset.k);tr.style.display=!q||[t.name,t.lot,t.phone,t.email].join(' ').toLowerCase().includes(q)?'':'none'})}
-function exp(){dl((P.park+' tenants').replace(/[^\w]+/g,'-')+'.csv',[TCOLS,...L().map(tRow)])}
-const HM={name:['tenant name','name','tenant','resident','resident name'],lot:['lot #','lot','lot#','unit','unit #','space','site','#'],phone:['phone','phone number','mobile','cell'],email:['email','email address','e-mail'],pay:['paying customer','paying','paying?'],chg:['monthly charge','charge','monthly charge $','amount']};
+function filt(){const q=document.getElementById('q').value.trim().toLowerCase();document.querySelectorAll('#tb tr[data-k]').forEach(tr=>{const t=L().find(x=>x.k==tr.dataset.k);tr.style.display=!q||[t.name,spn(t.sp),t.lot,t.phone,t.email].join(' ').toLowerCase().includes(q)?'':'none'})}
+function exp(){dl((P.park+' tenants').replace(/[^\w]+/g,'-')+'.csv',MP?[['Park',...TCOLS],...L().map(t=>[spn(t.sp),...tRow(t)])]:[TCOLS,...L().map(tRow)])}
+const HM={sp:['park','park name','community','sub-park'],name:['tenant name','name','tenant','resident','resident name'],lot:['lot #','lot','lot#','unit','unit #','space','site','#'],phone:['phone','phone number','mobile','cell'],email:['email','email address','e-mail'],pay:['paying customer','paying','paying?'],chg:['monthly charge','charge','monthly charge $','amount']};
 function imp(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const R=parseCSV(r.result);if(R.length<2)throw Error('file has no rows');
 const H=R[0].map(h=>h.trim().toLowerCase()),ix={};for(const k in HM)ix[k]=H.findIndex(h=>HM[k].includes(h));if(ix.name<0)throw Error('no "Tenant Name" column found');
-let a=0,u=0;const A=L(),key=t=>(String(t.lot).trim()+'|'+String(t.name).trim()).toLowerCase();
-R.slice(1).forEach(c=>{const g=k=>ix[k]<0?'':(c[ix[k]]??'').trim();const n={name:g('name'),lot:g('lot'),phone:g('phone'),email:g('email'),pay:'',chg:''};
+let a=0,u=0;const A=L(),key=t=>((MP?(t.sp||'')+'|':'')+String(t.lot).trim()+'|'+String(t.name).trim()).toLowerCase();
+R.slice(1).forEach(c=>{const g=k=>ix[k]<0?'':(c[ix[k]]??'').trim();const sv=g('sp').toLowerCase(),sm=MP&&sv?P.subs.find(s=>s.park.toLowerCase()==sv||s.park.toLowerCase().startsWith(sv)||sv.startsWith(s.park.toLowerCase().split(' ')[0])):null;const n={sp:sm?sm.id:'',name:g('name'),lot:g('lot'),phone:g('phone'),email:g('email'),pay:'',chg:''};
 let p=g('pay').toLowerCase();n.pay=/^(y|yes|true|1)$/.test(p)?'Yes':/^(n|no|false|0)$/.test(p)?'No':'';const ch=g('chg').replace(/[$,\s]/g,'');n.chg=ch===''||isNaN(+ch)?'':+ch;
 if(!n.name&&!n.lot)return;const ex=A.find(t=>key(t)==key(n));if(ex){for(const k of ['phone','email','pay','chg'])if(n[k]!=='')ex[k]=n[k];u++}else{n.k=uid();A.push(n);a++}});
 save();render();toast(`Imported: ${a} added, ${u} updated.`)}catch(x){toast('Import failed: '+x.message)}inp.value=''};r.readAsText(f)}
 async function go(){try{D=await (await fetch('data.json',{cache:'no-store'})).json()}catch(x){document.getElementById('app').style.display='block';document.getElementById('sub').textContent='Could not load data: '+x.message;return}
-P=D.rows.find(r=>r.id==id);document.getElementById('app').style.display='block';
+P=D.rows.find(r=>r.id==id);if(!P){for(const nk in MERGE)if(MERGE[nk].includes(id)){location.replace('park.html?id='+nk);return}}if(P){MP=P.subs.length>0;if(MP)document.querySelector('#t thead th').insertAdjacentHTML('afterend','<th>Park</th>')}document.getElementById('app').style.display='block';
 if(!P){document.getElementById('h').textContent='Park not found';document.querySelector('.bar').style.display='none';document.querySelector('.tw').style.display='none';return}
-document.title=P.park+' — Tenants — Elevate Starlink Tracker';document.getElementById('h').textContent=P.park;document.getElementById('sub').textContent=P.addr||'';
-render();setW(document.getElementById('t'),innerWidth<700?[150,62,130,190,86,100,44]:[230,70,150,250,120,130,48])}
+document.title=P.park+' — Tenants — Elevate Starlink Tracker';document.getElementById('h').textContent=P.park;document.getElementById('sub').textContent=(MP?P.sub_park+' · ':'')+(P.addr||'');
+render();setW(document.getElementById('t'),MP?(innerWidth<700?[150,120,62,130,190,86,100,44]:[200,150,64,140,220,115,120,44]):(innerWidth<700?[150,62,130,190,86,100,44]:[230,70,150,250,120,130,48]))}
 go();
 </script><!--SORTABLE-START--><script>
 /* Shared sortable tables (Grok Bot trackers). Click any header: asc/desc toggle with ▲/▼.
