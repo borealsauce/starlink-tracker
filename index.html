@@ -54,13 +54,32 @@ table.fx tfoot td{overflow:visible}
 #app>h2{color:#7fd3f7}#app>.note{color:#c9ced4}a.back{color:#9fdcf8!important}a.back:hover{color:#fff!important}
 .tw{box-shadow:0 4px 18px rgba(0,0,0,.18)}.card,header.brand{box-shadow:0 4px 14px rgba(0,0,0,.15)}
 td.inv{color:var(--mut);font-size:13px}
+
+/* card-style rows: each investment / tenant reads as its own box */
+.tw{background:#eef1f4}
+table.boxed{border-spacing:0 8px;padding:0 10px 4px}
+table.boxed thead th{background:transparent;border-bottom:2px solid var(--acc);padding-top:12px}
+table.boxed tbody td{background:#fff;border-top:1px solid #dfe4ea;border-bottom:1px solid #dfe4ea;transition:background .12s,border-color .12s}
+table.boxed tbody td:first-child{border-left:4px solid #cfe9f7;border-radius:10px 0 0 10px}
+table.boxed tbody td:last-child{border-right:1px solid #dfe4ea;border-radius:0 10px 10px 0}
+table.boxed tbody tr{box-shadow:0 1px 3px rgba(20,30,40,.08);border-radius:10px}
+table.boxed tbody tr:hover td{background:#f5fbfe;border-color:#b9e3f8}
+table.boxed tbody tr:hover td:first-child{border-left-color:#00a4ec;background:#f5fbfe}
+table.boxed tfoot td{background:var(--accs);border-top:2px solid var(--acc);border-bottom:2px solid var(--acc)}
+table.boxed tfoot td:first-child{border-left:4px solid var(--acc);border-radius:10px 0 0 10px}
+table.boxed tfoot td:last-child{border-right:1px solid var(--acc);border-radius:0 10px 10px 0}
+table.boxed td.empty{border-radius:10px}
+a.pk{font-size:16px;font-weight:600;letter-spacing:-.01em;line-height:1.25;text-decoration:none;display:inline-block}
+a.pk .pre{display:block;font-size:10.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#8a939c;margin-bottom:1px}
+a.pk:hover{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+@media(max-width:600px){table.boxed{padding:0 6px 2px;border-spacing:0 6px}a.pk{font-size:15px}}
 </style></head><body>
 <div id="app">
 <header class="brand"><img src="elevate-logo.png" alt="Elevate Commercial"><div class="tx"><div class="eyebrow">Starlink Internet · Elevate Parks</div><h1>Elevate Starlink Tracker</h1><div class="muted" id="sub"></div></div></header>
 <div class="cards" id="cards"></div>
 <h2>Summary</h2>
 <div class="bar"><button onclick="csv()">Export parks CSV</button><button onclick="csvAll()">Export all tenants CSV</button></div>
-<div class="tw"><table id="t"><thead><tr><th>Investment</th><th>Park(s)</th><th>Address</th><th class="n"># Pads</th><th class="n"># Tenants</th><th class="n">Paying Customers</th><th class="n">Monthly Charge</th></tr></thead><tbody id="tb"></tbody><tfoot><tr id="tf"></tr></tfoot></table></div>
+<div class="tw"><table id="t" class="boxed"><thead><tr><th>Investment</th><th>Park(s)</th><th>Address</th><th class="n"># Pads</th><th class="n"># Tenants</th><th class="n">Paying Customers</th><th class="n">Monthly Charge</th></tr></thead><tbody id="tb"></tbody><tfoot><tr id="tf"></tr></tfoot></table></div>
 <p class="note">One row per Elevate portal investment; multi-park deals (Columbus 2, Lake County, Pocatello) are combined into one row. Open an investment to manage its tenants. Paying customers and monthly charge total automatically from each park's tenant list, which is stored only on this device. Pad and tenant counts come from the saved Elevate OMs and rent rolls; tap a dotted number to see its source.</p>
 </div>
 <div id="tip" onclick="this.style.display='none'"></div>
@@ -99,7 +118,7 @@ function num(v,src){return v==null?`<td class="n" data-v=""><span class="src gap
 function render(){
 document.getElementById('sub').textContent=D.rows.length+' Elevate investments · updated '+new Date(D.updated+'T12:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
 const f=v=>v==null?'—':v.toLocaleString();
-document.getElementById('tb').innerHTML=D.rows.map(r=>{const s=stats(T[r.id]);return `<tr data-id="${r.id}"><td data-v="${esc(r.park)}"><a class="pk" href="park.html?id=${encodeURIComponent(r.id)}">${esc(r.park)}</a></td><td data-v="${esc(r.sub_park)}" class="inv">${esc(r.sub_park)}</td>`+
+document.getElementById('tb').innerHTML=D.rows.map(r=>{const s=stats(T[r.id]);return `<tr data-id="${r.id}"><td data-v="${esc(r.park)}"><a class="pk" href="park.html?id=${encodeURIComponent(r.id)}">${r.park.startsWith('Elevate ')?'<span class="pre">Elevate</span>'+esc(r.park.slice(8)):esc(r.park)}</a></td><td data-v="${esc(r.sub_park)}" class="inv">${esc(r.sub_park)}</td>`+
 `<td data-v="${esc(r.addr)}">${r.addr?esc(r.addr):'<span class="gap">— not found</span>'}</td>`+num(r.pads,r.ps)+num(r.ten,r.ts)+
 `<td class="n" data-v="${s.pay}">${s.pay}</td>`+
 `<td class="n" data-v="${s.rev}">${$(s.rev)}</td></tr>`}).join('');
@@ -112,7 +131,7 @@ D.rows.forEach(r=>{const s=stats(T[r.id]);L.push([r.park,r.sub_park,r.addr,r.pad
 function csvAll(){const L=[['Investment','Park',...TCOLS]];D.rows.forEach(r=>(T[r.id]||[]).forEach(t=>L.push([r.park,(r.subs.find(s=>s.id==t.sp)||{}).park||(r.subs.length?'':r.sub_park),...tRow(t)])));dl('starlink-all-tenants-'+new Date().toISOString().slice(0,10)+'.csv',L)}
 document.addEventListener('click',e=>{const s=e.target.closest('.src');if(!s)return;const t=document.getElementById('tip');t.textContent=s.dataset.s;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',6000)});
 async function go(){try{D=await load();}catch(x){document.getElementById('app').style.display='block';document.getElementById('sub').textContent='Could not load data: '+x.message;return;}
-document.getElementById('app').style.display='block';try{render();setW(document.getElementById('t'),innerWidth<700?[150,140,180,70,82,96,108]:[200,165,265,72,82,140,120])}catch(x){document.getElementById('sub').textContent='Display error: '+x.message;console.error(x)}}
+document.getElementById('app').style.display='block';try{render();setW(document.getElementById('t'),innerWidth<700?[150,140,180,70,82,96,108]:[215,165,255,70,80,135,115])}catch(x){document.getElementById('sub').textContent='Display error: '+x.message;console.error(x)}}
 addEventListener('pageshow',e=>{if(e.persisted&&D){T=loadT();render()}});
 go();
 </script><!--SORTABLE-START--><script>
