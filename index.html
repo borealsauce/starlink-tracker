@@ -20,7 +20,7 @@ table.fx{table-layout:fixed;width:auto}table.fx td,table.fx th{overflow:hidden;t
 #tip{position:fixed;left:10px;right:10px;bottom:14px;background:#24303d;border:1px solid #3d5068;border-radius:10px;padding:10px 12px;font-size:14px;display:none;z-index:9;max-width:600px;margin:auto}
 .neg{color:#f66}
 </style></head><body>
-<div id="gate"><form onsubmit="go(event)"><h1>Starlink Tracker</h1><p class="muted">Enter password</p><input id="pw" type="password" inputmode="numeric" autocomplete="current-password" autofocus><button>Open</button><div id="err" class="neg"></div></form></div>
+
 <div id="app">
 <h1>Starlink Tracker — Elevate Parks</h1><div class="muted" id="sub"></div>
 <div class="cards" id="cards"></div>
@@ -32,10 +32,7 @@ table.fx{table-layout:fixed;width:auto}table.fx td,table.fx th{overflow:hidden;t
 <script>
 let D;const LS='starlink_edits_v1';let E={};try{E=JSON.parse(localStorage[LS]||'{}')}catch(x){}
 const b64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
-async function decrypt(pw){const e=await (await fetch('data.enc.json',{cache:'no-store'})).json();
-const km=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);
-const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt:b64(e.salt),iterations:e.iter,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['decrypt']);
-return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:b64(e.iv)},key,b64(e.ct))));}
+async function load(){return await (await fetch('data.json',{cache:'no-store'})).json();}
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const $=v=>'$'+(+v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 function num(v,src){return v==null?`<td class="n" data-v=""><span class="src gap" data-s="${esc(src)}" title="${esc(src)}">—</span></td>`:`<td class="n" data-v="${v}"><span class="src" data-s="${esc(src)}" title="${esc(src)}">${v.toLocaleString()}</span></td>`}
@@ -62,9 +59,9 @@ h.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();h.se
 const mv=ev=>{W[i]=Math.max(50,w0+ev.clientX-x0);th.style.width=W[i]+'px';tw()};
 h.addEventListener('pointermove',mv);h.addEventListener('pointerup',()=>{h.classList.remove('on');h.removeEventListener('pointermove',mv)},{once:true})})})}
 function initW(){const t=document.getElementById('t'),m=innerWidth<700;const w=m?[150,170,66,76,96,104]:[250,330,75,85,130,130];t.querySelectorAll('thead th').forEach((th,i)=>th.style.width=w[i]+'px');rz(t);}
-async function go(e){e&&e.preventDefault();try{const pw=e?document.getElementById('pw').value:sessionStorage.slpw;D=await decrypt(pw);sessionStorage.slpw=pw;}catch(x){if(e)document.getElementById('err').textContent='Wrong password';return;}
-document.getElementById('gate').style.display='none';document.getElementById('app').style.display='block';try{render();initW()}catch(x){document.getElementById('sub').textContent='Display error: '+x.message;console.error(x)}}
-try{if(sessionStorage.slpw)go()}catch(x){}
+async function go(){try{D=await load();}catch(x){document.getElementById('app').style.display='block';document.getElementById('sub').textContent='Could not load data: '+x.message;return;}
+document.getElementById('app').style.display='block';try{render();initW()}catch(x){document.getElementById('sub').textContent='Display error: '+x.message;console.error(x)}}
+go();
 </script><!--SORTABLE-START--><script>
 /* Shared sortable tables (Grok Bot trackers). Click any header: asc/desc toggle with ▲/▼.
    Works on dynamically rendered tables via event delegation. Totals (tfoot, .total/.ft/.tot rows,
