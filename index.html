@@ -119,7 +119,7 @@ function render(){
 document.getElementById('sub').textContent=D.rows.length+' Elevate investments · updated '+new Date(D.updated+'T12:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
 const f=v=>v==null?'—':v.toLocaleString();
 document.getElementById('tb').innerHTML=D.rows.map(r=>{const s=stats(T[r.id]);return `<tr data-id="${r.id}"><td data-v="${esc(r.park)}"><a class="pk" href="park.html?id=${encodeURIComponent(r.id)}">${r.park.startsWith('Elevate ')?'<span class="pre">Elevate</span>'+esc(r.park.slice(8)):esc(r.park)}</a></td><td data-v="${esc(r.sub_park)}" class="inv">${esc(r.sub_park)}</td>`+
-`<td data-v="${esc(r.addr)}">${r.addr?esc(r.addr):'<span class="gap">— not found</span>'}</td>`+num(r.pads,r.ps)+num(r.ten,r.ts)+
+`<td data-v="${esc(r.addr)}">${r.addr?(r.asrc?`<span class="src" data-s="${esc(r.asrc)}" title="${esc(r.asrc)}">${esc(r.addr)}</span>`:esc(r.addr)):'<span class="gap">— not found</span>'}</td>`+num(r.pads,r.ps)+num(r.ten,r.ts)+
 `<td class="n" data-v="${s.pay}">${s.pay}</td>`+
 `<td class="n" data-v="${s.rev}">${$(s.rev)}</td></tr>`}).join('');
 tot();}
