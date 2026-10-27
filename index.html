@@ -1,32 +1,50 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Starlink Tracker</title>
-<style>
-body{font-family:-apple-system,system-ui,sans-serif;margin:0;background:#0f1419;color:#e6e6e6}
-#gate{display:flex;justify-content:center;align-items:center;min-height:100vh}#gate form{text-align:center}
-input,button,select{font-size:16px;padding:8px;border-radius:8px;border:1px solid #444;background:#1b222b;color:#fff}
-#gate input,#gate button{font-size:18px;padding:10px;margin:4px}
-#app{display:none;max-width:1100px;margin:auto;padding:12px}h1{font-size:22px;margin:8px 0}
-.muted{color:#999;font-size:13px}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:8px;margin:10px 0}
-.card{background:#1b222b;border-radius:10px;padding:10px}.card .l{font-size:12px;color:#aaa}.card .v{font-size:18px;font-weight:600}
-.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
-.tw{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px}
-table{border-collapse:collapse;width:100%;font-size:14px}th,td{padding:7px 8px;border-bottom:1px solid #2a323c;text-align:left;vertical-align:middle}
-td.n,th.n{text-align:right}th{background:#1b222b;position:sticky;top:0;white-space:nowrap}
-tfoot td{font-weight:700;background:#151b22}
-th:first-child,td:first-child{position:sticky;left:0;background:#0f1419;z-index:1}th:first-child{background:#1b222b;z-index:3}tfoot td:first-child{background:#151b22}
-.inv{font-size:11px;color:#8aa;margin-top:2px}.src{border-bottom:1px dotted #7aa7ff;cursor:help}.gap{color:#f6b04e}
-td select,td input{width:100%;box-sizing:border-box;padding:6px}td input{text-align:right}
-th{position:sticky}.rz{position:absolute;right:0;top:0;bottom:0;width:12px;cursor:col-resize;touch-action:none;z-index:4}.rz:after{content:"";position:absolute;right:4px;top:25%;bottom:25%;width:2px;background:#3a4152}.rz:hover:after,.rz.on:after{background:#22c55e}
-table.fx{table-layout:fixed;width:auto}#t th,#t td{box-sizing:border-box}table.fx td,table.fx th{overflow:hidden;text-overflow:ellipsis}
-#tip{position:fixed;left:10px;right:10px;bottom:14px;background:#24303d;border:1px solid #3d5068;border-radius:10px;padding:10px 12px;font-size:14px;display:none;z-index:9;max-width:600px;margin:auto}
-.neg{color:#f66}a.pk{color:#7aa7ff;text-decoration:none;font-weight:600}a.pk:hover{text-decoration:underline}.sm{font-size:11px;color:#999}
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Elevate Starlink Tracker</title>
+<style>:root{--bg:#f5f7fa;--card:#fff;--ink:#0f172a;--mut:#64748b;--line:#e2e8f0;--line2:#eef2f6;--acc:#1d4ed8;--accs:#eff4ff;--navy:#0b2545;--ok:#047857;--warn:#b45309}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+#app{display:none;max-width:1120px;margin:auto;padding:28px 20px 40px}
+header{margin-bottom:20px}.eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--acc);font-weight:600;margin-bottom:4px}
+h1{font-size:26px;line-height:1.2;margin:0;font-weight:700;letter-spacing:-.02em;color:var(--navy)}
+h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);font-weight:600;margin:28px 0 10px}
+.muted{color:var(--mut);font-size:13px}#sub{margin-top:4px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.card .l{font-size:12px;color:var(--mut);font-weight:500}.card .v{font-size:22px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums;color:var(--navy)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+a.tile{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;text-decoration:none;color:inherit;transition:border-color .15s,box-shadow .15s,transform .15s}
+a.tile:hover{border-color:#93b4f5;box-shadow:0 4px 14px rgba(15,23,42,.07);transform:translateY(-1px)}
+.tile .nm{font-weight:650;font-size:15px;color:var(--navy);line-height:1.25;min-height:2.5em}
+.tile .st{display:flex;gap:12px;margin-top:10px;font-size:12px;color:var(--mut);font-variant-numeric:tabular-nums}.tile .st b{display:block;font-size:15px;color:var(--ink);font-weight:600}
+.tile .ft{margin-top:10px;padding-top:8px;border-top:1px solid var(--line2);font-size:12px;color:var(--mut);display:flex;justify-content:space-between}.tile .ft .pay{color:var(--ok);font-weight:600}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 12px}
+button,.btn{font:inherit;font-size:14px;font-weight:500;padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;line-height:1.2}
+button:hover,.btn:hover{background:#f8fafc;border-color:#cbd5e1}button.pri{background:var(--acc);border-color:var(--acc);color:#fff}button.pri:hover{background:#1e40af}
+input,select{font:inherit;font-size:16px;color:var(--ink)}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch;background:var(--card);border:1px solid var(--line);border-radius:12px}
+table{border-collapse:separate;border-spacing:0;width:100%;font-size:14px;font-variant-numeric:tabular-nums}
+th,td{padding:10px 12px;border-bottom:1px solid var(--line2);text-align:left;vertical-align:middle}
+th{background:#f8fafc;color:var(--mut);font-size:12px;font-weight:600;letter-spacing:.02em;white-space:nowrap;position:sticky;top:0;border-bottom:1px solid var(--line);cursor:pointer;user-select:none}
+th.nosort{cursor:default}td.n,th.n{text-align:right}tbody tr:hover td{background:#fafbfd}
+tfoot td{white-space:nowrap;font-weight:700;background:#f8fafc;border-top:1px solid var(--line);border-bottom:0;color:var(--navy)}
+th:first-child,td:first-child{position:sticky;left:0;background:#fff;z-index:1}th:first-child{background:#f8fafc;z-index:3}tfoot td:first-child{background:#f8fafc}tbody tr:hover td:first-child{background:#fafbfd}
+a.pk{color:var(--acc);text-decoration:none;font-weight:600}a.pk:hover{text-decoration:underline}
+.src{border-bottom:1px dotted #94a3b8;cursor:help}.gap{color:var(--warn)}.sm{font-size:11px;color:var(--mut);font-weight:400}
+.srt-ar{margin-left:4px;font-size:9px;color:var(--acc)}
+.rz{position:absolute;right:0;top:0;bottom:0;width:12px;cursor:col-resize;touch-action:none;z-index:4}.rz:after{content:"";position:absolute;right:5px;top:30%;bottom:30%;width:1px;background:#cbd5e1}.rz:hover:after,.rz.on:after{background:var(--acc);width:2px}
+table.fx{table-layout:fixed;width:auto}table.fx td,table.fx th{overflow:hidden;text-overflow:ellipsis}#t th,#t td{box-sizing:border-box}
+#tip{position:fixed;left:12px;right:12px;bottom:16px;background:var(--navy);color:#fff;border-radius:10px;padding:11px 14px;font-size:14px;display:none;z-index:9;max-width:600px;margin:auto;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.note{margin:14px 2px 0;font-size:12px;color:var(--mut)}
+@media(max-width:600px){#app{padding:18px 12px 32px}h1{font-size:22px}.tiles{grid-template-columns:repeat(2,1fr);gap:10px}a.tile{padding:12px}.tile .nm{font-size:14px}.tile .st{gap:8px}.cards{grid-template-columns:repeat(2,1fr);gap:10px}.card{padding:12px}.card .v{font-size:19px}th,td{padding:8px 9px}}
 </style></head><body>
-
 <div id="app">
-<h1>Starlink Tracker — Elevate Parks</h1><div class="muted" id="sub"></div>
+<header><div class="eyebrow">Elevate Parks · Starlink Internet</div><h1>Elevate Starlink Tracker</h1><div class="muted" id="sub"></div></header>
 <div class="cards" id="cards"></div>
-<div class="bar"><button onclick="csv()">Export parks CSV</button><button onclick="csvAll()">Export all tenants CSV</button><span class="muted">Tap a park name to open its tenant list. Paying customers and monthly charge add up automatically from each park's tenants. Tenant details are stored only on this device.</span></div>
+<h2>Parks</h2>
+<div class="tiles" id="tiles"></div>
+<h2>Summary</h2>
+<div class="bar"><button onclick="csv()">Export parks CSV</button><button onclick="csvAll()">Export all tenants CSV</button></div>
 <div class="tw"><table id="t"><thead><tr><th>Park Name</th><th>Address</th><th class="n"># Pads</th><th class="n"># Tenants</th><th class="n">Paying Customers</th><th class="n">Monthly Charge</th></tr></thead><tbody id="tb"></tbody><tfoot><tr id="tf"></tr></tfoot></table></div>
-<div class="muted" style="margin:14px 0">Click any park to list its tenants (name, lot, phone, email, paying, charge). Pads and tenants come from the saved Elevate OMs, with the source and date shown on tap or hover. Blank orange values have no saved OM or document to support them. Tenants = occupied lots.</div>
+<p class="note">Open a park to manage its tenants. Paying customers and monthly charge total automatically from each park's tenant list, which is stored only on this device. Pad and tenant counts come from the saved Elevate OMs and rent rolls; tap a dotted number to see its source.</p>
 </div>
 <div id="tip" onclick="this.style.display='none'"></div>
 <script>
@@ -55,21 +73,23 @@ let D,T=loadT();
 async function load(){return await (await fetch('data.json',{cache:'no-store'})).json();}
 function num(v,src){return v==null?`<td class="n" data-v=""><span class="src gap" data-s="${esc(src)}" title="${esc(src)}">—</span></td>`:`<td class="n" data-v="${v}"><span class="src" data-s="${esc(src)}" title="${esc(src)}">${v.toLocaleString()}</span></td>`}
 function render(){
-document.getElementById('sub').textContent=D.rows.length+' parks across current Elevate investments · data updated '+D.updated;
-document.getElementById('tb').innerHTML=D.rows.map(r=>{const s=stats(T[r.id]);return `<tr data-id="${r.id}"><td data-v="${esc(r.park)}"><a class="pk" href="park.html?id=${encodeURIComponent(r.id)}">${esc(r.park)}</a><div class="inv">${esc(r.inv)}</div></td>`+
+document.getElementById('sub').textContent=D.rows.length+' parks · updated '+new Date(D.updated+'T12:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+const f=v=>v==null?'—':v.toLocaleString();
+document.getElementById('tiles').innerHTML=D.rows.map(r=>{const s=stats(T[r.id]);return `<a class="tile" href="park.html?id=${encodeURIComponent(r.id)}"><div class="nm">${esc(r.park)}</div><div class="st"><div><b>${f(r.pads)}</b>pads</div><div><b>${f(r.ten)}</b>tenants</div></div><div class="ft"><span${s.pay?' class="pay"':''}>${s.pay} paying</span><span>${$(s.rev)}/mo</span></div></a>`}).join('');
+document.getElementById('tb').innerHTML=D.rows.map(r=>{const s=stats(T[r.id]);return `<tr data-id="${r.id}"><td data-v="${esc(r.park)}"><a class="pk" href="park.html?id=${encodeURIComponent(r.id)}">${esc(r.park)}</a></td>`+
 `<td data-v="${esc(r.addr)}">${r.addr?esc(r.addr):'<span class="gap">— not found</span>'}</td>`+num(r.pads,r.ps)+num(r.ten,r.ts)+
-`<td class="n" data-v="${s.pay}">${s.pay}<div class="sm">${s.n?'of '+s.n+' listed':'no tenants listed'}</div></td>`+
+`<td class="n" data-v="${s.pay}">${s.pay}</td>`+
 `<td class="n" data-v="${s.rev}">${$(s.rev)}</td></tr>`}).join('');
 tot();}
 function tot(){const R=D.rows,s=k=>R.reduce((a,r)=>a+(r[k]||0),0);let pay=0,rev=0,n=0;R.forEach(r=>{const x=stats(T[r.id]);pay+=x.pay;rev+=x.rev;n+=x.n});
-document.getElementById('tf').innerHTML=`<td>TOTAL</td><td>${R.length} parks</td><td class="n">${s('pads').toLocaleString()}</td><td class="n">${s('ten').toLocaleString()}</td><td class="n">${pay} paying</td><td class="n">${$(rev)}/mo</td>`;
+document.getElementById('tf').innerHTML=`<td>Total</td><td>${R.length} parks</td><td class="n">${s('pads').toLocaleString()}</td><td class="n">${s('ten').toLocaleString()}</td><td class="n">${pay} paying</td><td class="n">${$(rev)}/mo</td>`;
 document.getElementById('cards').innerHTML=[['Parks',R.length],['Total pads',s('pads').toLocaleString()],['Total tenants',s('ten').toLocaleString()],['Paying customers',pay],['Monthly revenue',$(rev)]].map(c=>`<div class="card"><div class="l">${c[0]}</div><div class="v">${c[1]}</div></div>`).join('');}
 function csv(){const L=[['Park Name','Elevate Investment','Address','# Pads','# Tenants','Paying Customers','Monthly Charge','Tenants Listed','Pads Source','Tenants Source']];
 D.rows.forEach(r=>{const s=stats(T[r.id]);L.push([r.park,r.inv,r.addr,r.pads,r.ten,s.pay,s.rev.toFixed(2),s.n,r.ps,r.ts])});dl('starlink-parks-'+new Date().toISOString().slice(0,10)+'.csv',L)}
 function csvAll(){const L=[['Park Name',...TCOLS]];D.rows.forEach(r=>(T[r.id]||[]).forEach(t=>L.push([r.park,...tRow(t)])));dl('starlink-all-tenants-'+new Date().toISOString().slice(0,10)+'.csv',L)}
 document.addEventListener('click',e=>{const s=e.target.closest('.src');if(!s)return;const t=document.getElementById('tip');t.textContent=s.dataset.s;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',6000)});
 async function go(){try{D=await load();}catch(x){document.getElementById('app').style.display='block';document.getElementById('sub').textContent='Could not load data: '+x.message;return;}
-document.getElementById('app').style.display='block';try{render();setW(document.getElementById('t'),innerWidth<700?[150,170,66,76,92,100]:[260,330,75,85,120,130])}catch(x){document.getElementById('sub').textContent='Display error: '+x.message;console.error(x)}}
+document.getElementById('app').style.display='block';try{render();setW(document.getElementById('t'),innerWidth<700?[150,180,70,82,96,108]:[250,350,90,100,140,140])}catch(x){document.getElementById('sub').textContent='Display error: '+x.message;console.error(x)}}
 addEventListener('pageshow',e=>{if(e.persisted&&D){T=loadT();render()}});
 go();
 </script><!--SORTABLE-START--><script>
