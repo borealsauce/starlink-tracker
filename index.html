@@ -73,6 +73,8 @@ a.pk{font-size:16px;font-weight:600;letter-spacing:-.01em;line-height:1.25;text-
 a.pk .pre{display:block;font-size:10.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#8a939c;margin-bottom:1px}
 a.pk:hover{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
 @media(max-width:600px){table.boxed{padding:0 6px 2px;border-spacing:0 6px}a.pk{font-size:15px}}
+
+.aka{font-size:.78em;color:#8a9199;font-weight:400;margin-top:2px}
 </style></head><body>
 <div id="app">
 <header class="brand"><img src="elevate-logo.png" alt="Elevate Commercial"><div class="tx"><div class="eyebrow">Starlink Internet · Elevate Parks</div><h1>Elevate Starlink Tracker</h1><div class="muted" id="sub"></div></div></header>
@@ -118,7 +120,7 @@ function num(v,src){return v==null?`<td class="n" data-v=""><span class="src gap
 function render(){
 document.getElementById('sub').textContent=D.rows.length+' Elevate investments · updated '+new Date(D.updated+'T12:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
 const f=v=>v==null?'—':v.toLocaleString();
-document.getElementById('tb').innerHTML=D.rows.map(r=>{const s=stats(T[r.id]);return `<tr data-id="${r.id}"><td data-v="${esc(r.park)}"><a class="pk" href="park.html?id=${encodeURIComponent(r.id)}">${r.park.startsWith('Elevate ')?'<span class="pre">Elevate</span>'+esc(r.park.slice(8)):esc(r.park)}</a></td><td data-v="${esc(r.sub_park)}" class="inv">${esc(r.sub_park)}</td>`+
+document.getElementById('tb').innerHTML=D.rows.map(r=>{const s=stats(T[r.id]);return `<tr data-id="${r.id}"><td data-v="${esc(r.park)}"><a class="pk" href="park.html?id=${encodeURIComponent(r.id)}">${r.park.startsWith('Elevate ')?'<span class="pre">Elevate</span>'+esc(r.park.slice(8)):esc(r.park)}</a></td><td data-v="${esc(r.sub_park)}" class="inv">${esc(r.sub_park)}${r.aka?`<div class="aka">${esc(r.aka)}</div>`:''}</td>`+
 `<td data-v="${esc(r.addr)}">${r.addr?(r.asrc?`<span class="src" data-s="${esc(r.asrc)}" title="${esc(r.asrc)}">${esc(r.addr)}</span>`:esc(r.addr)):'<span class="gap">— not found</span>'}</td>`+num(r.pads,r.ps)+num(r.ten,r.ts)+
 `<td class="n" data-v="${s.pay}">${s.pay}</td>`+
 `<td class="n" data-v="${s.rev}">${$(s.rev)}</td></tr>`}).join('');
